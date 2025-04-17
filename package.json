@@ -1,0 +1,12 @@
+{
+	"name": "com.cptnfabulous.objectpool",
+	"version": "1.0.0",
+	"displayName": "CptnFabulous' Object Pool",
+	"description": "A static object pool for easy spawning and reusing of assets. Automatically generates and handles multiple pools for different prefab types. I originally made this for my FPS, but placed it in a standalone package so it'll look better in my portfolio.",
+	"unity": "2021.3",
+	"author": {
+		"name": "Marcus Mouyat",
+		"email": "marcus@mouyat.com",
+		"url": ""
+	}
+}
