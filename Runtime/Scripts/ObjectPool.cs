@@ -21,6 +21,7 @@ namespace CptnFabulous.ObjectPool
             Component originalPrefab;
             public int maxPrefabs = 100;
             public bool activeByDefault = true;
+            public bool disableUponDismissal = true;
 
             Transform poolParent;
             List<Component> active;
@@ -62,6 +63,7 @@ namespace CptnFabulous.ObjectPool
                 standby.Enqueue(toDismiss);
 
                 // Disable object and shuffle it back in with the pool parent
+                if (disableUponDismissal) toDismiss.gameObject.SetActive(false);
                 toDismiss.transform.SetParent(poolParent);
 
                 return true;
@@ -108,7 +110,7 @@ namespace CptnFabulous.ObjectPool
         }
 
 
-        public static void CreateObjectPool<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0) where T : Component
+        public static void CreateObjectPool<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0, bool disableUponDismissal = true) where T : Component
         {
             // Don't do anything if there's no prefab specified
             if (prefab == null) return;
@@ -140,6 +142,7 @@ namespace CptnFabulous.ObjectPool
             // Set additional values (maybe I should put these in the constructor)
             newPool.maxPrefabs = maxPrefabs;
             newPool.activeByDefault = activeByDefault;
+            newPool.disableUponDismissal = disableUponDismissal;
 
             dictionary.Add(prefab, newPool);
         }
