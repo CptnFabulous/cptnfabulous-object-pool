@@ -20,12 +20,13 @@ namespace CptnFabulous.ObjectPool
 
             Component originalPrefab;
             public int maxPrefabs = 100;
+            public bool activeByDefault = true;
 
             Transform poolParent;
             List<Component> active;
             Queue<Component> standby;
 
-            public Component RequestObject(bool activeByDefault = true)
+            public Component RequestObject()
             {
                 // Clear entries for accidentally-destroyed objects
                 active.RemoveAll((x) => x == null);
@@ -59,8 +60,8 @@ namespace CptnFabulous.ObjectPool
                 // Remove from active list, add to standby queue
                 active.Remove(toDismiss);
                 standby.Enqueue(toDismiss);
+
                 // Disable object and shuffle it back in with the pool parent
-                toDismiss.gameObject.SetActive(false);
                 toDismiss.transform.SetParent(poolParent);
 
                 return true;
@@ -86,8 +87,36 @@ namespace CptnFabulous.ObjectPool
             // Don't do anything if there's no prefab specified
             if (prefab == null) return null;
 
+            // Ensure an object pool is present (create one if it hasn't already been created)
+            CreateObjectPool(prefab, activeByDefault, maxPrefabs, false);
+
+            // TO DO: delete pools whose original prefabs have been destroyed
+
+            foreach (Component c in dictionary.Keys)
+            {
+                if (c == null)
+                {
+                    // TO DO: delete object pool and all the spawned objects
+                    dictionary.Remove(c);
+                }
+            }
+
+            
+
+            // Request the desired object from that pool.
+            return dictionary[prefab].RequestObject() as T;
+        }
+
+
+        public static void CreateObjectPool<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0) where T : Component
+        {
+            // Don't do anything if there's no prefab specified
+            if (prefab == null) return;
+
             // Make sure a dictionary actually exists
             if (dictionary == null) dictionary = new Dictionary<Component, IndividualObjectPool>();
+            
+            /*
 
             // TO DO: delete pools whose original prefabs have been destroyed
 
@@ -96,13 +125,26 @@ namespace CptnFabulous.ObjectPool
             {
                 // If not, create one
                 dictionary.Add(prefab, new IndividualObjectPool(prefab));
+                // Set max number of prefabs (might as well do it here so we can set different max sizes for different prefabs)
+                dictionary[prefab].maxPrefabs = maxPrefabs;
+                dictionary[prefab].activeByDefault = activeByDefault;
             }
+            */
 
-            // Set max number of prefabs (might as well do it here so we can set different max sizes for different prefabs)
-            dictionary[prefab].maxPrefabs = maxPrefabs;
-            // Request the desired object from that pool.
-            return dictionary[prefab].RequestObject(activeByDefault) as T;
+
+            // Check if a pool already exists for this prefab
+            if (dictionary.ContainsKey(prefab)) return;
+
+            // Create the pool
+            IndividualObjectPool newPool = new IndividualObjectPool(prefab);
+            // Set additional values (maybe I should put these in the constructor)
+            newPool.maxPrefabs = maxPrefabs;
+            newPool.activeByDefault = activeByDefault;
+
+            dictionary.Add(prefab, newPool);
         }
+
+
         /// <summary>
         /// Returns an object to the pool it was spawned from. Destroys the object if it was not created from a pool.
         /// </summary>
@@ -118,7 +160,7 @@ namespace CptnFabulous.ObjectPool
                 if (pool.DismissObject(toDismiss)) return;
             }
 
-            // If it's not recognised by one of the pools, just destroy it since it still needs to be gotten rid of
+            // If it's not recognised by one of the pools, just destroy it since we still need to get rid of it
             Object.Destroy(toDismiss.gameObject);
         }
     }
