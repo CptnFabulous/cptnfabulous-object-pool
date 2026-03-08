@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CptnFabulous.ObjectPool
@@ -92,17 +93,8 @@ namespace CptnFabulous.ObjectPool
             // Ensure an object pool is present (create one if it hasn't already been created)
             CreateObjectPool(prefab, activeByDefault, maxPrefabs, false);
 
-            // TO DO: delete pools whose original prefabs have been destroyed
-
-            foreach (Component c in dictionary.Keys)
-            {
-                if (c == null)
-                {
-                    // TO DO: delete object pool and all the spawned objects
-                    dictionary.Remove(c);
-                }
-            }
-
+            // Delete pools whose original prefabs have been destroyed
+            ClearDictionaryElements(dictionary, (c) => c == null);
             
 
             // Request the desired object from that pool.
@@ -165,6 +157,15 @@ namespace CptnFabulous.ObjectPool
 
             // If it's not recognised by one of the pools, just destroy it since we still need to get rid of it
             Object.Destroy(toDismiss.gameObject);
+        }
+
+        public static void ClearDictionaryElements<TKey, TValue>(Dictionary<TKey, TValue> dictionary, System.Func<TKey, bool> criteria)
+        {
+            for (int i = dictionary.Count - 1; i >= 0; i--)
+            {
+                TKey key = dictionary.Keys.ElementAt(i);
+                if (criteria.Invoke(key)) dictionary.Remove(key);
+            }
         }
     }
 }
