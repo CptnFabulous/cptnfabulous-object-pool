@@ -82,7 +82,7 @@ namespace CptnFabulous.ObjectPool
         /// <param name="activeByDefault">Does the object spawn as active or inactive?</param>
         /// <param name="maxPrefabs">Sets how many prefabs can spawn at a time before existing ones start being re-assigned. Zero or less means an unlimited number.</param>
         /// <returns></returns>
-        public static T RequestObject<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0) where T : Component
+        public static T RequestObject<T>(T prefab) where T : Component
         {
             // Only this function needs to have a generic type, because each prefab is separated by being dictionary keys anyway.
             // I tried setting it up to use completely generic types, but this meant having to declare the type each time ObjectPool is referenced.
@@ -91,7 +91,7 @@ namespace CptnFabulous.ObjectPool
             if (prefab == null) return null;
 
             // Ensure an object pool is present (create one if it hasn't already been created)
-            CreateObjectPool(prefab, activeByDefault, maxPrefabs, false);
+            CreateObjectPool(prefab);
 
             // Delete pools whose original prefabs have been destroyed
             ClearDictionaryElements(dictionary, (c) => c == null);
@@ -102,32 +102,33 @@ namespace CptnFabulous.ObjectPool
         }
 
 
-        public static void CreateObjectPool<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0, bool disableUponDismissal = true) where T : Component
+
+
+
+
+
+
+        /// <summary>
+        /// Creates an object pool for a prefab type. This is called automatically when a prefab is requested, but can be called beforehand to set unique properties for a prefab type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="prefab"></param>
+        /// <param name="activeByDefault"></param>
+        /// <param name="maxPrefabs"></param>
+        /// <param name="disableUponDismissal"></param>
+        /// <returns></returns>
+        public static bool CreateObjectPool<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0, bool disableUponDismissal = true) where T : Component
         {
             // Don't do anything if there's no prefab specified
-            if (prefab == null) return;
+            if (prefab == null) return false;
 
             // Make sure a dictionary actually exists
             if (dictionary == null) dictionary = new Dictionary<Component, IndividualObjectPool>();
-            
-            /*
 
             // TO DO: delete pools whose original prefabs have been destroyed
 
             // Check if a pool already exists for this prefab
-            if (dictionary.ContainsKey(prefab) == false)
-            {
-                // If not, create one
-                dictionary.Add(prefab, new IndividualObjectPool(prefab));
-                // Set max number of prefabs (might as well do it here so we can set different max sizes for different prefabs)
-                dictionary[prefab].maxPrefabs = maxPrefabs;
-                dictionary[prefab].activeByDefault = activeByDefault;
-            }
-            */
-
-
-            // Check if a pool already exists for this prefab
-            if (dictionary.ContainsKey(prefab)) return;
+            if (dictionary.ContainsKey(prefab)) return false;
 
             // Create the pool
             IndividualObjectPool newPool = new IndividualObjectPool(prefab);
@@ -137,6 +138,7 @@ namespace CptnFabulous.ObjectPool
             newPool.disableUponDismissal = disableUponDismissal;
 
             dictionary.Add(prefab, newPool);
+            return true;
         }
 
 
