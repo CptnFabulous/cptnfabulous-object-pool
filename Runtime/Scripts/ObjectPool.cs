@@ -47,7 +47,7 @@ namespace CptnFabulous.ObjectPool
                 }
                 else // Otherwise, spawn a brand new one
                 {
-                    value = Object.Instantiate(originalPrefab);
+                    value = Object.Instantiate(originalPrefab, poolParent);
                 }
 
                 // Add the value to the list so we know what order it was spawned in
@@ -75,7 +75,7 @@ namespace CptnFabulous.ObjectPool
         static Dictionary<Component, IndividualObjectPool> dictionary;
 
         /// <summary>
-        /// Registers a pool for a prefab, and requests a copy (or creates one if all are currently being used).
+        /// Registers a pool for a prefab, and requests a copy (or creates one if all are currently being used). Object is parented to its pool parent by default.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="prefab">The prefab you want to spawn a copy of.</param>
