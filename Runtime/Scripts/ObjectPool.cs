@@ -24,7 +24,7 @@ namespace CptnFabulous.ObjectPool
             public bool activeByDefault = true;
             public bool disableUponDismissal = true;
 
-            Transform poolParent;
+            public Transform poolParent { get; private set; }
             List<Component> active;
             Queue<Component> standby;
 
@@ -158,6 +158,8 @@ namespace CptnFabulous.ObjectPool
             // If it's not recognised by one of the pools, just destroy it since we still need to get rid of it
             Object.Destroy(toDismiss.gameObject);
         }
+
+        public static Transform GetPoolParent(Component prefabType) => dictionary[prefabType].poolParent;
 
         public static void ClearDictionaryElements<TKey, TValue>(Dictionary<TKey, TValue> dictionary, System.Func<TKey, bool> criteria)
         {
