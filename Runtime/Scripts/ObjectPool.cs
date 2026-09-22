@@ -7,70 +7,6 @@ namespace CptnFabulous.ObjectPool
 {
     public static class ObjectPool
     {
-        public class IndividualObjectPool
-        {
-            public IndividualObjectPool(Component prefab)
-            {
-                originalPrefab = prefab;
-                standby = new Queue<Component>();
-                active = new List<Component>();
-                // Set up pool parent
-                poolParent = new GameObject($"Object Pool Parent ({originalPrefab})").transform;
-                Object.DontDestroyOnLoad(poolParent);
-            }
-
-            Component originalPrefab;
-            public int maxPrefabs = 100;
-            public bool activeByDefault = true;
-            public bool disableUponDismissal = true;
-
-            public Transform poolParent { get; private set; }
-            List<Component> active;
-            Queue<Component> standby;
-
-            public Component RequestObject()
-            {
-                // Clear entries for accidentally-destroyed objects
-                active.RemoveAll((x) => x == null);
-
-                Component value;
-                if (standby.Count > 0) // Check if there are any on standby in the pool
-                {
-                    // Load an existing one
-                    value = standby.Dequeue();
-                }
-                else if (maxPrefabs > 0 && active.Count >= maxPrefabs) // Otherwise, check if we're allowed to spawn more or if we've reached the limit and need to re-use existing ones
-                {
-                    // 'Deactivate' the oldest already-active one and re-use it
-                    value = active[0];
-                    active.RemoveAt(0);
-                }
-                else // Otherwise, spawn a brand new one
-                {
-                    value = Object.Instantiate(originalPrefab, poolParent);
-                }
-
-                // Add the value to the list so we know what order it was spawned in
-                active.Add(value);
-                value.gameObject.SetActive(activeByDefault);
-                return value;
-            }
-            public bool DismissObject(Component toDismiss)
-            {
-                if (active.Contains(toDismiss) == false) return false;
-
-                // Remove from active list, add to standby queue
-                active.Remove(toDismiss);
-                standby.Enqueue(toDismiss);
-
-                // Disable object and shuffle it back in with the pool parent
-                if (disableUponDismissal) toDismiss.gameObject.SetActive(false);
-                toDismiss.transform.SetParent(poolParent);
-
-                return true;
-            }
-        }
-
         // Keeps track of different pools for different prefabs
         static Dictionary<Component, IndividualObjectPool> dictionary;
 
@@ -90,12 +26,8 @@ namespace CptnFabulous.ObjectPool
             // Don't do anything if there's no prefab specified
             if (prefab == null) return null;
 
-            // Ensure an object pool is present (create one if it hasn't already been created)
-            CreateObjectPool(prefab);
-
-            // Delete pools whose original prefabs have been destroyed
-            ClearDictionaryElements(dictionary, (c) => c == null);
-            
+            // Ensure an object pool is present for this prefab (create one if it hasn't already been created)
+            TryCreateObjectPool(prefab);
 
             // Request the desired object from that pool.
             return dictionary[prefab].RequestObject() as T;
@@ -117,26 +49,19 @@ namespace CptnFabulous.ObjectPool
         /// <param name="maxPrefabs"></param>
         /// <param name="disableUponDismissal"></param>
         /// <returns></returns>
-        public static bool CreateObjectPool<T>(T prefab, bool activeByDefault = true, int maxPrefabs = 0, bool disableUponDismissal = true) where T : Component
+        public static bool TryCreateObjectPool<T>(T prefab, Transform parent = null, bool activeByDefault = true, int maxPrefabs = 0, bool disableUponDismissal = true) where T : Component
         {
             // Don't do anything if there's no prefab specified
             if (prefab == null) return false;
 
-            // Make sure a dictionary actually exists
-            if (dictionary == null) dictionary = new Dictionary<Component, IndividualObjectPool>();
-
-            // TO DO: delete pools whose original prefabs have been destroyed
+            // While we're managing the dictionary, delete any pools from it whose original prefabs have been destroyed
+            ClearDictionaryElements(dictionary, (c) => c == null);
 
             // Check if a pool already exists for this prefab
             if (dictionary.ContainsKey(prefab)) return false;
 
-            // Create the pool
-            IndividualObjectPool newPool = new IndividualObjectPool(prefab);
-            // Set additional values (maybe I should put these in the constructor)
-            newPool.maxPrefabs = maxPrefabs;
-            newPool.activeByDefault = activeByDefault;
-            newPool.disableUponDismissal = disableUponDismissal;
-
+            // Create the pool and add it to the dictionary
+            IndividualObjectPool newPool = new IndividualObjectPool(prefab, parent, maxPrefabs, activeByDefault, disableUponDismissal);
             dictionary.Add(prefab, newPool);
             return true;
         }
@@ -151,13 +76,16 @@ namespace CptnFabulous.ObjectPool
             // Don't proceed if there's nothing to dismiss
             if (toDismiss == null) return;
 
-            // Iterate through the pools to see if it's part of one of them. If so, delete and end the function
+            // Iterate through the pools to see if it's part of one of them.
             foreach (IndividualObjectPool pool in dictionary.Values)
             {
-                if (pool.DismissObject(toDismiss)) return;
+                // Try returning the object to the pool
+                bool dismissalSuccessful = pool.TryReturnObject(toDismiss);
+                // If successful, end this function
+                if (dismissalSuccessful) return;
             }
 
-            // If it's not recognised by one of the pools, just destroy it since we still need to get rid of it
+            // If none of the pools accepted it, just destroy it since we still need to get rid of it
             Object.Destroy(toDismiss.gameObject);
         }
 
