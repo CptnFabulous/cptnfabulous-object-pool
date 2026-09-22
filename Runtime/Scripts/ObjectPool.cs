@@ -8,7 +8,9 @@ namespace CptnFabulous.ObjectPool
     public static class ObjectPool
     {
         // Keeps track of different pools for different prefabs
-        static Dictionary<Component, IndividualObjectPool> dictionary;
+        static Dictionary<Component, IndividualObjectPool> dictionary = new Dictionary<Component, IndividualObjectPool>();
+
+        public static IReadOnlyDictionary<Component, IndividualObjectPool> activePools => dictionary;
 
         /// <summary>
         /// Registers a pool for a prefab, and requests a copy (or creates one if all are currently being used). Object is parented to its pool parent by default.
@@ -88,8 +90,6 @@ namespace CptnFabulous.ObjectPool
             // If none of the pools accepted it, just destroy it since we still need to get rid of it
             Object.Destroy(toDismiss.gameObject);
         }
-
-        public static Transform GetPoolParent(Component prefabType) => dictionary[prefabType].poolParent;
 
         public static void ClearDictionaryElements<TKey, TValue>(Dictionary<TKey, TValue> dictionary, System.Func<TKey, bool> criteria)
         {
