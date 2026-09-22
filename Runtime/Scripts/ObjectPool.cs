@@ -34,6 +34,35 @@ namespace CptnFabulous.ObjectPool
             // Request the desired object from that pool.
             return dictionary[prefab].RequestObject() as T;
         }
+        
+        public static T RequestObject<T>(T prefab, Transform parent) where T : Component
+        {
+            return RequestObject(prefab, parent, Vector3.zero, Quaternion.identity, false);
+        }
+        public static T RequestObject<T>(T prefab, Transform parent, Vector3 position, Quaternion rotation, bool worldPositionStays) where T : Component
+        {
+            T clone = RequestObject(prefab);
+
+            Transform t = clone.transform;
+            t.SetParent(parent);
+            if (worldPositionStays)
+            {
+                t.SetPositionAndRotation(position, rotation);
+            }
+            else
+            {
+                t.SetLocalPositionAndRotation(position, rotation);
+            }
+
+            return clone;
+        }
+        
+
+
+
+
+
+
 
 
 
